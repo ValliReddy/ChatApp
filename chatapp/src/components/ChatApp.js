@@ -43,6 +43,7 @@ const ChatApp = () => {
           if (!messageExists) {
             newMessages[msg.sender].push(msg);
           }
+          console.log(newMessages)
 
           return newMessages;
         });
@@ -112,6 +113,9 @@ const ChatApp = () => {
       socket.current.emit('stop_typing', currentUser); // Emit stop typing event if the message is empty
     }
   };
+
+ 
+  
 
   return (
     <div className="container">
@@ -230,8 +234,7 @@ const ChatApp = () => {
                         <li key={index} className="clearfix">
                           <div className="message-data">
                             <span className="message-data-name">
-                              {msg.sender === currentUser ? 'You' : msg.sender}
-                              <span className="message-data-time">{msg.time}</span>
+                             
                             </span>
                           </div>
                           <div
@@ -244,6 +247,7 @@ const ChatApp = () => {
                             }`}
                           >
                             {msg.text}
+                            <div className="message-time">{(msg.time)}</div>
                           </div>
                         </li>
                       ))}

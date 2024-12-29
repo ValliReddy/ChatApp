@@ -3,7 +3,13 @@ body{
     margin-top:20px;
     
 }
-
+.message-time {
+    font-size: 0.8em;
+    text-align: right;
+    margin-top: 5px;
+    color: #888; /* Optional: Grey color for subtle appearance */
+  }
+  
 .card {
     background: #fff;
     transition: .5s;

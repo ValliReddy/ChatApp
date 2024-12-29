@@ -67,7 +67,7 @@
 //   console.log('Server is running on http://localhost:5000');
 // });
 
-
+//restart control +c to see changes
 
 const express = require('express');
 const cors = require('cors');
@@ -97,7 +97,7 @@ const users = {};
 io.on('connection', (socket) => {
   console.log('A user connected');
 
-  // Register the user with a username
+  // Register the user with a username  //on means listening to emit for both client and server
   socket.on('register_user', (username) => {
     users[username] = socket;
     console.log(`${username} connected`);
@@ -113,11 +113,15 @@ io.on('connection', (socket) => {
     console.log('Message:', data.text);
 
     // Send the message to the intended receiver
+    // console.log(users);
+    // console.log(users[data.receiver]);
     const receiverSocket = users[data.receiver];
     if (receiverSocket) {
       receiverSocket.emit('receive_message', {
         sender: data.sender,
         text: data.text,
+        time:data.time,
+        
       });
       console.log(`Message sent to ${data.receiver}`);
     } else {
