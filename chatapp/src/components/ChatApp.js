@@ -137,7 +137,7 @@ const ChatApp = () => {
                       placeholder="Enter username..."
                     />
                     <button
-                      className="btn btn-primary"
+                      className="my-button"
                       onClick={handleUsernameSubmit}
                     >
                       Join Chat
@@ -278,7 +278,7 @@ const ChatApp = () => {
                         placeholder="Enter text here..."
                       />
                       <button
-                        className="btn btn-primary"
+                        className="my-button"
                         onClick={handleSendMessage}
                       >
                         Send
