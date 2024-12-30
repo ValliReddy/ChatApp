@@ -1,98 +1,94 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from './firebaseConfig'; // Adjust the import to where your firebase configuration is located
-import { collection, getDocs } from 'firebase/firestore';
-
+import { db, auth } from './firebaseConfig'; // Import your Firebase setup
+import { collection, getDocs, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 
 const ProfilePage = () => {
   const [username, setUsername] = useState('');
   const [profilePic, setProfilePic] = useState(null);
   const [friends, setFriends] = useState([]);
+  const [registered, setRegistered] = useState([]);
   const [friendEmail, setFriendEmail] = useState('');
   const navigate = useNavigate();
   
-const fetchUsers = async () => {
-  try {
-    // Reference to the users collection
-    const usersRef = collection(db, 'users'); // Assuming you have a "users" collection in Firestore
-    const querySnapshot = await getDocs(usersRef);
+  // Fetch all users once on component mount
+  const fetchUsers = async () => {
+    try {
+      const usersRef = collection(db, 'users');
+      const querySnapshot = await getDocs(usersRef);
+      const newRegistered = [];
+      
+      querySnapshot.forEach((doc) => {
+        const userData = doc.data();
+        if (userData.username && !newRegistered.includes(userData.username)) {
+          newRegistered.push(userData.username);
+        }
+      });
 
-    // Loop through the documents and log the username
-    querySnapshot.forEach((doc) => {
-      const userData = doc.data(); // Get the user data
-      console.log('Username:', userData.username); // Log the username
+      setRegistered(newRegistered);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+
+    // Check authentication state and handle user profile
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        console.log("User signed in:", user.email);
+
+        // Check if user data exists in Firestore
+        const userRef = doc(db, 'users', user.email);
+        const userSnap = await getDoc(userRef);
+        
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            username: user.displayName || 'Guest',
+            profilePic: user.photoURL || '',
+            friends: [],
+            chats: []
+          });
+          console.log("User data created in Firestore.");
+        } else {
+          console.log("User data already exists in Firestore.");
+        }
+      }
     });
-  } catch (error) {
-    console.error('Error fetching users:', error); // Log any errors
-  }
-};
 
-// Call the function to fetch users
-fetchUsers();
+    return () => unsubscribe(); // Clean up the listener when component unmounts
+  }, []);
+
+  // Handle adding a friend
+  const handleAddFriend = async (friendUsername) => {
+    const user = auth.currentUser;
+
+    if (user && friendUsername) {
+      const userRef = doc(db, 'users', user.email);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        const updatedFriends = [...userData.friends, friendUsername];
+        
+        // Update the current user's friends list in Firestore
+        await updateDoc(userRef, {
+          friends: updatedFriends
+        });
+        console.log(`Added ${friendUsername} to friends`);
+        setFriends(updatedFriends); // Update local state for friends
+      }
+    }
+  };
+
   // Handle profile picture upload
   const handleProfilePicChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setProfilePic(URL.createObjectURL(file));
     }
-  };
-
-  // Handle adding a friend
-  const handleAddFriend = () => {
-    if (friendEmail) {
-      setFriends([...friends, friendEmail]);
-      setFriendEmail('');
-    }
-  };
-
-  // Inline styles
-  const profilePicContainerStyle = {
-    position: 'relative',
-    width: '120px', // Decreased size
-    height: '120px', // Decreased size
-    margin: '0 auto', // Center the profile picture
-  };
-
-  const profileImgStyle = {
-    width: '100%',
-    height: '100%',
-    borderRadius: '50%',
-    objectFit: 'cover',
-    border: '4px solid #f8f9fa',
-  };
-
-  const profileSectionStyle = {
-    display: 'flex',
-    justifyContent: 'center', // Center both sections
-    alignItems: 'flex-start',
-    gap: '20px',
-  };
-
-  const rightSectionStyle = {
-    width: '300px',
-    paddingLeft: '20px',
-    borderLeft: '2px solid #f8f9fa',
-    paddingTop: '20px',
-  };
-
-  const ovalButtonStyle = {
-    fontSize: '0.8rem', // Smaller font size
-    padding: '8px 10px', // Adjusted padding for oval shape
-    borderRadius: '20px', // Rounded edges for oval shape
-    backgroundColor: '#007bff', // Blue background color
-    color: 'white', // White text color
-    border: 'none', // Remove border
-    cursor: 'pointer', // Pointer cursor on hover
-    transition: 'background-color 0.3s', // Smooth transition for hover effect
-  };
-
-  const ovalButtonHoverStyle = {
-    backgroundColor: '#0056b3', // Darker shade on hover
-  };
-
-  const friendTextStyle = {
-    color: 'white',  // White text
-    fontWeight: 'bold', // Bold text
   };
 
   return (
@@ -107,16 +103,16 @@ fetchUsers();
             <div className="col-lg-12 login-title">Profile Page</div>
 
             <div className="col-lg-12 login-form">
-              <div style={profileSectionStyle}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
                 {/* Left Section: Profile Picture and Username */}
                 <div style={{ textAlign: 'center' }}>
                   <div className="form-group">
-                    <div className="profile-pic-container" style={profilePicContainerStyle}>
+                    <div className="profile-pic-container" style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto' }}>
                       <img
                         src={profilePic || "https://bootdey.com/img/Content/avatar/avatar1.png"}
                         alt="Profile"
                         className="profile-img"
-                        style={profileImgStyle}
+                        style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '4px solid #f8f9fa' }}
                       />
                       <input
                         type="file"
@@ -128,7 +124,6 @@ fetchUsers();
 
                   {/* Username */}
                   <div className="form-group">
-                    {/* <label className="form-control-label">Username</label> */}
                     <input
                       type="text"
                       className="form-control"
@@ -140,7 +135,7 @@ fetchUsers();
                 </div>
 
                 {/* Right Section: Add Friend and Friends List */}
-                <div style={rightSectionStyle}>
+                <div style={{ width: '300px', paddingLeft: '20px', borderLeft: '2px solid #f8f9fa', paddingTop: '20px' }}>
                   {/* Add Friend Section */}
                   <div className="form-group">
                     <label className="form-control-label">Search Friend</label>
@@ -152,16 +147,20 @@ fetchUsers();
                         className="form-control"
                         placeholder="Enter friend's email"
                       />
-                      {/* <button
-                        type="button"
-                        style={ovalButtonStyle} // Apply oval button styles
-                        onMouseEnter={(e) => e.target.style.backgroundColor = ovalButtonHoverStyle.backgroundColor} // Hover effect
-                        onMouseLeave={(e) => e.target.style.backgroundColor = '#007bff'} // Reset hover effect
-                        onClick={handleAddFriend}
-                      >
-                        Add Friend
-                      </button> */}
                     </div>
+                  </div>
+
+                  {/* Registered Users List */}
+                  <div className="form-group">
+                    <label className="form-control-label">All Registered Users</label>
+                    <ul>
+                      {registered.map((friend, index) => (
+                        <li key={index} style={{ color: 'white', fontWeight: 'bold' }}>
+                          {friend} 
+                          <button onClick={() => handleAddFriend(friend)} style={{ marginLeft: '10px' }}>Add Friend</button>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
                   {/* Friends List */}
@@ -169,7 +168,7 @@ fetchUsers();
                     <label className="form-control-label">Friends</label>
                     <ul>
                       {friends.map((friend, index) => (
-                        <li key={index} style={friendTextStyle}>{friend}</li> // Applying text styles
+                        <li key={index} style={{ color: 'white', fontWeight: 'bold' }}>{friend}</li>
                       ))}
                     </ul>
                   </div>
@@ -185,6 +184,7 @@ fetchUsers();
 };
 
 export default ProfilePage;
+
 
 // import { useEffect } from 'react';
 // import { auth, db } from './firebaseConfig';  // Import your Firebase setup
