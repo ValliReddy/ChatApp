@@ -120,6 +120,21 @@ const ProfilePage = () => {
     user.toLowerCase().includes(searchText.toLowerCase())
   );
 
+  // Handle saving the updated profile info
+  const handleSave = async () => {
+    const user = auth.currentUser;
+
+    if (user) {
+      const userRef = doc(db, 'users', user.email);
+      await updateDoc(userRef, {
+        username: username || user.displayName,
+        profilePic: profilePic || user.photoURL
+      });
+      console.log('Profile updated successfully!');
+      alert('Profile updated!');
+    }
+  };
+
   return (
     <div>
       <div className="container">
@@ -161,6 +176,22 @@ const ProfilePage = () => {
                       placeholder="Enter your username"
                     />
                   </div>
+                  <button
+        onClick={handleSave}
+        style={{
+          // position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          padding: '10px 20px',
+          borderRadius: '10px',
+          backgroundColor: '#007bff',
+          color: 'white',
+          border: 'none',
+          cursor: 'pointer',
+        }}
+      >
+        Save
+      </button>
                 </div>
 
                 {/* Right Section: Add Friend and Friends List */}
@@ -221,19 +252,27 @@ const ProfilePage = () => {
                         <li>No friends yet</li>
                       )}
                     </ul>
+                    
                   </div>
+                  
                 </div>
               </div>
             </div>
           </div>
+
           <div className="col-lg-3 col-md-2"></div>
         </div>
+        
       </div>
+
+      {/* Save Button */}
+     
     </div>
   );
 };
 
 export default ProfilePage;
+
 
 
 
