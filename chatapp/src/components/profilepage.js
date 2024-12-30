@@ -23,7 +23,7 @@ const ProfilePage = () => {
       querySnapshot.forEach((doc) => {
         const userData = doc.data();
         if (userData.username && !newRegistered.includes(userData.username)) {
-          newRegistered.push(userData.username);
+          newRegistered.push(userData);
         }
       });
 
@@ -41,6 +41,7 @@ const ProfilePage = () => {
     if (userSnap.exists()) {
       const userData = userSnap.data();
       setFriends(userData.friends || []);  // Default to empty array if no friends
+
     } else {
       console.log("User not found.");
     }
@@ -77,36 +78,36 @@ const ProfilePage = () => {
   }, []);
 
   // Handle adding a friend
-  const handleAddFriend = async (friendUsername) => {
+  const handleAddFriend = async (friend) => {
     const user = auth.currentUser;
-
-    if (user && friendUsername) {
+  
+    if (user && friend) {
       const userRef = doc(db, 'users', user.email);
       const userSnap = await getDoc(userRef);
-
+  
       if (userSnap.exists()) {
         const userData = userSnap.data();
-
+  
         // Check if the user is already friends with the selected friend
-        if (userData.friends.includes(friendUsername)) {
-          alert(`${friendUsername} is already in your friends list.`);
-          return; // Don't add them again
+        if (userData.friends.some((existingFriend) => existingFriend.username === friend.username)) {
+          alert(`${friend.username} is already in your friends list.`);
+          return;
         }
-
-        const updatedFriends = [...userData.friends, friendUsername];
-
+  
+        const updatedFriends = [...userData.friends, friend];
+  
         // Update the current user's friends list in Firestore
         await updateDoc(userRef, {
           friends: updatedFriends
         });
-        console.log(`Added ${friendUsername} to friends`);
-
+        console.log(`Added ${friend.username} to friends`);
+  
         // Update local state for friends and re-fetch friends list
         setFriends(updatedFriends);
       }
     }
   };
-
+  
   // Handle profile picture upload
   const handleProfilePicChange = (e) => {
     const file = e.target.files[0];
@@ -117,7 +118,7 @@ const ProfilePage = () => {
 
   // Filter registered users based on search input
   const filteredUsers = registered.filter((user) =>
-    user.toLowerCase().includes(searchText.toLowerCase())
+    user.username.toLowerCase().includes(searchText.toLowerCase())
   );
 
   // Handle saving the updated profile info
@@ -214,29 +215,31 @@ const ProfilePage = () => {
                   <div className="form-group">
                     <label className="form-control-label">All Registered Users</label>
                     <ul>
-                      {filteredUsers.length > 0 ? (
-                        filteredUsers.map((friend, index) => (
-                          <li key={index} style={{ color: 'white', fontWeight: 'bold' }}>
-                            {friend} 
-                            <button
-                              onClick={() => handleAddFriend(friend)}
-                              style={{
-                                marginLeft: '10px',
-                                padding: '6px 12px',
-                                borderRadius: '20px', // Oval button
-                                backgroundColor: '#007bff', 
-                                color: 'white',
-                                border: 'none',
-                                cursor: 'pointer',
-                              }}
-                            >
-                              Add Friend
-                            </button>
-                          </li>
-                        ))
-                      ) : (
-                        <li>No users found</li>
-                      )}
+                    {filteredUsers.length > 0 ? (
+  filteredUsers.map((friend, index) => (
+    <li key={index} style={{ color: 'white', fontWeight: 'bold' }}>
+      {friend.username} 
+      <button
+        onClick={() => handleAddFriend(friend)}  // Pass the full user object
+        style={{
+          marginLeft: '10px',
+          padding: '6px 12px',
+          borderRadius: '20px', // Oval button
+          backgroundColor: '#007bff', 
+          color: 'white',
+          border: 'none',
+          cursor: 'pointer',
+        }}
+      >
+        Add Friend
+      </button>
+    </li>
+  ))
+) : (
+  <li>No users found</li>
+)}
+
+                    
                     </ul>
                   </div>
 
@@ -244,13 +247,21 @@ const ProfilePage = () => {
                   <div className="form-group">
                     <label className="form-control-label">Your Friends</label>
                     <ul>
-                      {friends.length > 0 ? (
-                        friends.map((friend, index) => (
-                          <li key={index} style={{ color: 'white', fontWeight: 'bold' }}>{friend}</li>
-                        ))
-                      ) : (
-                        <li>No friends yet</li>
-                      )}
+                    {friends.length > 0 ? (
+  friends.map((friend, index) => (
+    <li key={index} style={{ color: 'white', fontWeight: 'bold' }}>
+      <img
+        src={friend.profilePic || "https://bootdey.com/img/Content/avatar/avatar1.png"}
+        alt={friend.username}
+        style={{ width: '30px', height: '30px', borderRadius: '50%', marginRight: '10px' }}
+      />
+      {friend.username}
+    </li>
+  ))
+) : (
+  <li>No friends yet</li>
+)}
+
                     </ul>
                     
                   </div>
