@@ -181,8 +181,10 @@ const ChatApp = () => {
                           src="https://bootdey.com/img/Content/avatar/avatar1.png"
                           alt="avatar"
                         />
+
                         <div className="about">
                           <div className="name">{user}</div>
+                          
                           <div className="status">
                             <i className="fa fa-circle online"></i> online
                           </div>
