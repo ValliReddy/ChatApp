@@ -4,6 +4,7 @@ import ChatApp from "./components/ChatApp";
 import Signup from "./components/signup";
 import Navbar from './components/navbar';
 import Signin from './components/signin';
+import Profile from './components/profilepage';
 function App() {
   return (
     <Router>
@@ -13,6 +14,7 @@ function App() {
         <Route path="/" element={<Signup />} />
         <Route path="/signin" element={<Signin />} />
         <Route path="/chat" element={<ChatApp />} />
+        <Route path="/profile" element={<Profile />} />
       </Routes>
     </Router>
   );
