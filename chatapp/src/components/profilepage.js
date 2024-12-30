@@ -7,18 +7,19 @@ import { onAuthStateChanged } from 'firebase/auth';
 const ProfilePage = () => {
   const [username, setUsername] = useState('');
   const [profilePic, setProfilePic] = useState(null);
-  const [friends, setFriends] = useState([]);
-  const [registered, setRegistered] = useState([]);
+  const [friends, setFriends] = useState([]);  // To store the list of friends
+  const [registered, setRegistered] = useState([]);  // To store all registered users
   const [friendEmail, setFriendEmail] = useState('');
+  const [searchText, setSearchText] = useState('');  // For searching users by name
   const navigate = useNavigate();
-  
+
   // Fetch all users once on component mount
   const fetchUsers = async () => {
     try {
       const usersRef = collection(db, 'users');
       const querySnapshot = await getDocs(usersRef);
       const newRegistered = [];
-      
+
       querySnapshot.forEach((doc) => {
         const userData = doc.data();
         if (userData.username && !newRegistered.includes(userData.username)) {
@@ -32,24 +33,38 @@ const ProfilePage = () => {
     }
   };
 
-  useEffect(() => {
-    fetchUsers();
+  // Fetch current user's friends from Firestore
+  const fetchUserFriends = async (userEmail) => {
+    const userRef = doc(db, 'users', userEmail);
+    const userSnap = await getDoc(userRef);
 
-    // Check authentication state and handle user profile
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      setFriends(userData.friends || []);  // Default to empty array if no friends
+    } else {
+      console.log("User not found.");
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers(); // Fetch all registered users
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         console.log("User signed in:", user.email);
 
-        // Check if user data exists in Firestore
+        // Fetch user data from Firestore
+        fetchUserFriends(user.email);  // Get the user's friends
+
+        // Check if user data exists in Firestore, create it if not
         const userRef = doc(db, 'users', user.email);
         const userSnap = await getDoc(userRef);
-        
+
         if (!userSnap.exists()) {
           await setDoc(userRef, {
             username: user.displayName || 'Guest',
             profilePic: user.photoURL || '',
-            friends: [],
-            chats: []
+            friends: [],  // Start with an empty friends list
+            chats: []  // Empty chats list initially
           });
           console.log("User data created in Firestore.");
         } else {
@@ -71,14 +86,23 @@ const ProfilePage = () => {
 
       if (userSnap.exists()) {
         const userData = userSnap.data();
+
+        // Check if the user is already friends with the selected friend
+        if (userData.friends.includes(friendUsername)) {
+          alert(`${friendUsername} is already in your friends list.`);
+          return; // Don't add them again
+        }
+
         const updatedFriends = [...userData.friends, friendUsername];
-        
+
         // Update the current user's friends list in Firestore
         await updateDoc(userRef, {
           friends: updatedFriends
         });
         console.log(`Added ${friendUsername} to friends`);
-        setFriends(updatedFriends); // Update local state for friends
+
+        // Update local state for friends and re-fetch friends list
+        setFriends(updatedFriends);
       }
     }
   };
@@ -90,6 +114,11 @@ const ProfilePage = () => {
       setProfilePic(URL.createObjectURL(file));
     }
   };
+
+  // Filter registered users based on search input
+  const filteredUsers = registered.filter((user) =>
+    user.toLowerCase().includes(searchText.toLowerCase())
+  );
 
   return (
     <div>
@@ -136,16 +165,16 @@ const ProfilePage = () => {
 
                 {/* Right Section: Add Friend and Friends List */}
                 <div style={{ width: '300px', paddingLeft: '20px', borderLeft: '2px solid #f8f9fa', paddingTop: '20px' }}>
-                  {/* Add Friend Section */}
+                  {/* Search Registered Users */}
                   <div className="form-group">
                     <label className="form-control-label">Search Friend</label>
                     <div className="input-group">
                       <input
                         type="text"
-                        value={friendEmail}
-                        onChange={(e) => setFriendEmail(e.target.value)}
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
                         className="form-control"
-                        placeholder="Enter friend's email"
+                        placeholder="Enter friend's name"
                       />
                     </div>
                   </div>
@@ -154,22 +183,43 @@ const ProfilePage = () => {
                   <div className="form-group">
                     <label className="form-control-label">All Registered Users</label>
                     <ul>
-                      {registered.map((friend, index) => (
-                        <li key={index} style={{ color: 'white', fontWeight: 'bold' }}>
-                          {friend} 
-                          <button onClick={() => handleAddFriend(friend)} style={{ marginLeft: '10px' }}>Add Friend</button>
-                        </li>
-                      ))}
+                      {filteredUsers.length > 0 ? (
+                        filteredUsers.map((friend, index) => (
+                          <li key={index} style={{ color: 'white', fontWeight: 'bold' }}>
+                            {friend} 
+                            <button
+                              onClick={() => handleAddFriend(friend)}
+                              style={{
+                                marginLeft: '10px',
+                                padding: '6px 12px',
+                                borderRadius: '20px', // Oval button
+                                backgroundColor: '#007bff', 
+                                color: 'white',
+                                border: 'none',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Add Friend
+                            </button>
+                          </li>
+                        ))
+                      ) : (
+                        <li>No users found</li>
+                      )}
                     </ul>
                   </div>
 
                   {/* Friends List */}
                   <div className="form-group">
-                    <label className="form-control-label">Friends</label>
+                    <label className="form-control-label">Your Friends</label>
                     <ul>
-                      {friends.map((friend, index) => (
-                        <li key={index} style={{ color: 'white', fontWeight: 'bold' }}>{friend}</li>
-                      ))}
+                      {friends.length > 0 ? (
+                        friends.map((friend, index) => (
+                          <li key={index} style={{ color: 'white', fontWeight: 'bold' }}>{friend}</li>
+                        ))
+                      ) : (
+                        <li>No friends yet</li>
+                      )}
                     </ul>
                   </div>
                 </div>
@@ -184,6 +234,9 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
+
+
+
 
 
 // import { useEffect } from 'react';
