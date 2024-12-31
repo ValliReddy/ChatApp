@@ -150,7 +150,7 @@ const ChatApp = () => {
                         className="clearfix"
                         onClick={() => {
                           // Set the selected user to chat with
-                          setSelectedUser(user.username);
+                          setSelectedUser(user.userId);
                         }}
                       >
                         <img
