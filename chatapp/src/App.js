@@ -5,8 +5,10 @@ import Signup from "./components/signup";
 import Navbar from './components/navbar';
 import Signin from './components/signin';
 import Profile from './components/profilepage';
+import { UserProvider } from './components/UserProvider'; // Import the UserProvider
 function App() {
   return (
+    <UserProvider>
     <Router>
       <Navbar />
       <Routes>
@@ -17,6 +19,7 @@ function App() {
         <Route path="/profile" element={<Profile />} />
       </Routes>
     </Router>
+    </UserProvider>
   );
 }
 

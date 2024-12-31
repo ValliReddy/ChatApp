@@ -6,7 +6,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 
 const ProfilePage = () => {
   const [username, setUsername] = useState('');
-
+  const[curr,setCurrent]=useState('');
   const [profilePic, setProfilePic] = useState(null);
   const [friends, setFriends] = useState([]);  // To store the list of friends
   const [registered, setRegistered] = useState([]);  // To store all registered users
@@ -83,7 +83,7 @@ const fetchUserFriends = async (userEmail) => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         console.log("User signed in:", user.email);
-
+        setCurrent(user.email);
         // Fetch user data from Firestore
         fetchUserFriends(user.email);
           // Get the user's friends
@@ -174,6 +174,7 @@ const fetchUserFriends = async (userEmail) => {
           username: updatedUsername,
           profilePic: updatedProfilePic,
         });
+       
         console.log('Profile updated successfully!');
         alert('Profile updated!');
       } catch (error) {
@@ -193,7 +194,7 @@ const fetchUserFriends = async (userEmail) => {
             <div className="col-lg-12 login-key">
               <i className="fa fa-user" aria-hidden="true"></i>
             </div>
-            <div className="col-lg-12 login-title">Profile Page</div>
+            <div className="col-lg-12 login-title">{curr}</div>
 
             <div className="col-lg-12 login-form">
               <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>

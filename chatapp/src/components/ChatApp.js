@@ -3,7 +3,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'font-awesome/css/font-awesome.min.css';
 import './chatApp.css'; // Add custom CSS for styling
 import io from 'socket.io-client';
-
+import { useUserContext } from './UserProvider'; // Import the custom hook
 const ChatApp = () => {
   const [messages, setMessages] = useState({}); // Store messages by receiver
   const [newMessage, setNewMessage] = useState('');
@@ -13,7 +13,15 @@ const ChatApp = () => {
   const [selectedUser, setSelectedUser] = useState(null); // Track selected chat user
   const [typingUser, setTypingUser] = useState(null); // Track who is typing
   const socket = useRef(null);
+  const { user, friends } = useUserContext();
+ 
 
+  useEffect(() => {
+    if (user) {
+      setCurrentUser(user.email);
+    }
+  }, [user]);
+  console.log(friends)
   useEffect(() => {
     if (currentUser) {
       socket.current = io('http://localhost:5000');
@@ -64,13 +72,13 @@ const ChatApp = () => {
     }
   }, [currentUser]);
 
-  const handleUsernameSubmit = () => {
-    if (username.trim()) {
-      setCurrentUser(username);
-    } else {
-      alert('Please enter a valid username');
-    }
-  };
+  // const handleUsernameSubmit = () => {
+  //   if (username.trim()) {
+  //     setCurrentUser(username);
+  //   } else {
+  //     alert('Please enter a valid username');
+  //   }
+  // };
 
   const handleSendMessage = () => {
     if (newMessage.trim() && selectedUser) {
@@ -115,36 +123,7 @@ const ChatApp = () => {
 
   return (
     <div className="container">
-      {!currentUser ? (
-        <div className="row clearfix">
-          <div className="col-lg-12">
-            <div className="card chat-app">
-              <div className="chat">
-                <div className="chat-header clearfix">
-                  <h6 className="mb-0">Enter your username</h6>
-                </div>
-                <div className="chat-message clearfix">
-                  <div className="input-group mb-0">
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder="Enter username..."
-                    />
-                    <button
-                      className="my-button"
-                      onClick={handleUsernameSubmit}
-                    >
-                      Join Chat
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
+      
         <div className="row clearfix">
           <div className="col-lg-12">
             <div className="card chat-app">
@@ -163,14 +142,14 @@ const ChatApp = () => {
                   />
                 </div>
                 <ul className="list-unstyled chat-list mt-2 mb-0">
-                  {onlineUsers.map((user, index) => (
+                  {friends.map((user, index) => (
                     user !== currentUser && (
                       <li
                         key={index}
                         className="clearfix"
                         onClick={() => {
                           // Set the selected user to chat with
-                          setSelectedUser(user);
+                          setSelectedUser(user.username);
                         }}
                       >
                         <img
@@ -179,7 +158,7 @@ const ChatApp = () => {
                         />
 
                         <div className="about">
-                          <div className="name">{user}</div>
+                          <div className="name">{user.username}</div>
                           
                           <div className="status">
                             <i className="fa fa-circle online"></i> online
@@ -288,7 +267,7 @@ const ChatApp = () => {
             </div>
           </div>
         </div>
-      )}
+      
     </div>
   );
 };
