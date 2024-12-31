@@ -14,7 +14,7 @@ const ChatApp = () => {
   const [typingUser, setTypingUser] = useState(null); // Track who is typing
   const socket = useRef(null);
   const { user, friends } = useUserContext();
- 
+ console.log(friends);
 
   useEffect(() => {
     if (user) {
@@ -55,6 +55,7 @@ const ChatApp = () => {
 
       socket.current.on('update_users', (users) => {
         console.log('Updated user list:', users);
+        
         setOnlineUsers(users);
       });
 

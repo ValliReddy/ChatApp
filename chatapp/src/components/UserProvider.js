@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from './firebaseConfig';  // Import your Firebase setup
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc,getDocs } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 
 // Create the Context
@@ -11,15 +11,22 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [friends, setFriends] = useState([]);
 
+  // This effect checks if there is a user in sessionStorage
   useEffect(() => {
+    const storedUser = sessionStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        setUser(user); // Store current user
+        setUser(user); // Set user in context
+        sessionStorage.setItem('user', JSON.stringify(user)); // Store user in sessionStorage
 
         // Fetch friends list from Firestore
         const userRef = doc(db, 'users', user.email);
         const userSnap = await getDoc(userRef);
-        
+        const querySnapshot = await getDocs(userRef);
         if (userSnap.exists()) {
           const userData = userSnap.data();
           const friendIds = userData.friends || [];
@@ -35,10 +42,14 @@ export const UserProvider = ({ children }) => {
 
           setFriends(friendsData.filter(Boolean)); // Filter out null friends
         }
+      } else {
+        sessionStorage.removeItem('user'); // Remove user from sessionStorage on logout
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   return (
