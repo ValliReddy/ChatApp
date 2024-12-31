@@ -29,6 +29,9 @@ const Navbar = () => {
             <li>
               <Link to="/profile">Profile</Link>
             </li>
+            <li>
+              <Link to="/chat">ChatBox</Link>
+            </li>
           </ul>
         </nav>
       </div>

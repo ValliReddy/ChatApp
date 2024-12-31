@@ -1,60 +1,92 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { db, auth } from './firebaseConfig'; // Import your Firebase setup
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 
 const ProfilePage = () => {
   const [username, setUsername] = useState('');
+
   const [profilePic, setProfilePic] = useState(null);
   const [friends, setFriends] = useState([]);  // To store the list of friends
   const [registered, setRegistered] = useState([]);  // To store all registered users
-  const [friendEmail, setFriendEmail] = useState('');
+
   const [searchText, setSearchText] = useState('');  // For searching users by name
-  const navigate = useNavigate();
+
 
   // Fetch all users once on component mount
   const fetchUsers = async () => {
     try {
+      const current = auth.currentUser;
+      console.log(current);
       const usersRef = collection(db, 'users');
+     
       const querySnapshot = await getDocs(usersRef);
       const newRegistered = [];
-
+  
       querySnapshot.forEach((doc) => {
         const userData = doc.data();
-        if (userData.username && !newRegistered.includes(userData.username)) {
-          newRegistered.push(userData);
+        const userId = doc.id;  // Get the unique document ID
+  
+        if (userData.username && !newRegistered.some(user => user.username === userData.username) &&
+        current.email !== userId) {
+          newRegistered.push({ ...userData, userId });  // Add the userId to the user data
         }
       });
-
+  
       setRegistered(newRegistered);
+      
+      // Example of how to log unique ID and email for each registered user
+      console.log(newRegistered)
+      // newRegistered.forEach(user => {
+      //   console.log(`User ID: ${user.userId}`);
+      // });
     } catch (error) {
       console.error('Error fetching users:', error);
     }
   };
+  
 
-  // Fetch current user's friends from Firestore
-  const fetchUserFriends = async (userEmail) => {
+ // Fetch current user's friends
+const fetchUserFriends = async (userEmail) => {
+ 
+  try {
     const userRef = doc(db, 'users', userEmail);
     const userSnap = await getDoc(userRef);
 
     if (userSnap.exists()) {
       const userData = userSnap.data();
-      setFriends(userData.friends || []);  // Default to empty array if no friends
+      const friendIds = userData.friends || [];
 
+      // Fetch friend details by their IDs
+      const friendsData = await Promise.all(
+        friendIds.map(async (friendId) => {
+          const friendRef = doc(db, 'users', friendId);
+          const friendSnap = await getDoc(friendRef);
+          return friendSnap.exists() ? friendSnap.data() : null;
+        })
+      );
+
+      setFriends(friendsData.filter(Boolean)); // Exclude nulls if any friends are missing
+      console.log(friends);
     } else {
       console.log("User not found.");
     }
-  };
+  } catch (error) {
+    console.error("Error fetching friends:", error);
+  }
+};
+
 
   useEffect(() => {
-    fetchUsers(); // Fetch all registered users
+    // fetchUsers(); // Fetch all registered users
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         console.log("User signed in:", user.email);
 
         // Fetch user data from Firestore
-        fetchUserFriends(user.email);  // Get the user's friends
+        fetchUserFriends(user.email);
+          // Get the user's friends
 
         // Check if user data exists in Firestore, create it if not
         const userRef = doc(db, 'users', user.email);
@@ -72,41 +104,45 @@ const ProfilePage = () => {
           console.log("User data already exists in Firestore.");
         }
       }
+      fetchUsers(); // Fetch all registered users
     });
 
     return () => unsubscribe(); // Clean up the listener when component unmounts
   }, []);
 
-  // Handle adding a friend
   const handleAddFriend = async (friend) => {
     const user = auth.currentUser;
-  
+    
     if (user && friend) {
       const userRef = doc(db, 'users', user.email);
       const userSnap = await getDoc(userRef);
-  
       if (userSnap.exists()) {
         const userData = userSnap.data();
-  
-        // Check if the user is already friends with the selected friend
-        if (userData.friends.some((existingFriend) => existingFriend.username === friend.username)) {
-          alert(`${friend.username} is already in your friends list.`);
+      
+        // Validate friend ID and ensure it doesn't already exist
+        if (!friend.id || userData.friends.includes(friend.id)) {
+          console.log(friend.id);
+          alert('Invalid friend data or already added.');
+        
           return;
         }
   
-        const updatedFriends = [...userData.friends, friend];
-  
-        // Update the current user's friends list in Firestore
-        await updateDoc(userRef, {
-          friends: updatedFriends
-        });
-        console.log(`Added ${friend.username} to friends`);
-  
-        // Update local state for friends and re-fetch friends list
-        setFriends(updatedFriends);
+        try {
+          const updatedFriends = [...(userData.friends || []), friend.id];
+          await updateDoc(userRef, {
+            friends: updatedFriends,
+          });
+          console.log(`Added ${friend.username} to friends`);
+          fetchUserFriends(user.email); // Refresh friends list
+        } catch (error) {
+          console.error('Error adding friend:', error);
+          alert('Failed to add friend. Please try again.');
+        }
       }
     }
   };
+  
+
   
   // Handle profile picture upload
   const handleProfilePicChange = (e) => {
@@ -119,22 +155,34 @@ const ProfilePage = () => {
   // Filter registered users based on search input
   const filteredUsers = registered.filter((user) =>
     user.username.toLowerCase().includes(searchText.toLowerCase())
+    
   );
 
   // Handle saving the updated profile info
   const handleSave = async () => {
     const user = auth.currentUser;
-
+     console.log(user);
     if (user) {
       const userRef = doc(db, 'users', user.email);
-      await updateDoc(userRef, {
-        username: username || user.displayName,
-        profilePic: profilePic || user.photoURL
-      });
-      console.log('Profile updated successfully!');
-      alert('Profile updated!');
+  
+      // Use default values if username or profilePic is undefined
+      const updatedUsername = username || user.displayName || 'Guest';
+      const updatedProfilePic = profilePic || user.photoURL || '';
+  
+      try {
+        await updateDoc(userRef, {
+          username: updatedUsername,
+          profilePic: updatedProfilePic,
+        });
+        console.log('Profile updated successfully!');
+        alert('Profile updated!');
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        alert('Failed to update profile. Please try again.');
+      }
     }
   };
+  
 
   return (
     <div>
@@ -215,29 +263,28 @@ const ProfilePage = () => {
                   <div className="form-group">
                     <label className="form-control-label">All Registered Users</label>
                     <ul>
-                    {filteredUsers.length > 0 ? (
-  filteredUsers.map((friend, index) => (
-    <li key={index} style={{ color: 'white', fontWeight: 'bold' }}>
-      {friend.username} 
-      <button
-        onClick={() => handleAddFriend(friend)}  // Pass the full user object
-        style={{
-          marginLeft: '10px',
-          padding: '6px 12px',
-          borderRadius: '20px', // Oval button
-          backgroundColor: '#007bff', 
-          color: 'white',
-          border: 'none',
-          cursor: 'pointer',
-        }}
-      >
-        Add Friend
-      </button>
-    </li>
-  ))
-) : (
-  <li>No users found</li>
-)}
+                    {filteredUsers.map((user) => (
+  <li key={user.userId} style={{ color: 'white', fontWeight: 'bold' }}>
+
+    {user.username}
+    {/* {user.userId} */}
+    <button
+      onClick={() => handleAddFriend({ id: user.userId, username: user.username })}
+      style={{
+        marginLeft: '10px',
+        padding: '6px 12px',
+        borderRadius: '20px',
+        backgroundColor: '#007bff',
+        color: 'white',
+        border: 'none',
+        cursor: 'pointer',
+      }}
+    >
+      Add Friend
+    </button>
+  </li>
+))};
+
 
                     
                     </ul>
@@ -248,19 +295,19 @@ const ProfilePage = () => {
                     <label className="form-control-label">Your Friends</label>
                     <ul>
                     {friends.length > 0 ? (
-  friends.map((friend, index) => (
-    <li key={index} style={{ color: 'white', fontWeight: 'bold' }}>
-      <img
-        src={friend.profilePic || "https://bootdey.com/img/Content/avatar/avatar1.png"}
-        alt={friend.username}
-        style={{ width: '30px', height: '30px', borderRadius: '50%', marginRight: '10px' }}
-      />
-      {friend.username}
-    </li>
-  ))
-) : (
-  <li>No friends yet</li>
-)}
+      friends.map((friend, index) => (
+        <li key={index} style={{ color: 'white', fontWeight: 'bold' }}>
+          <img
+            src={friend.profilePic || "https://bootdey.com/img/Content/avatar/avatar1.png"}
+            alt={friend.username}
+            style={{ width: '30px', height: '30px', borderRadius: '50%', marginRight: '10px' }}
+          />
+          {friend.username}
+        </li>
+      ))
+    ) : (
+      <li>No friends yet</li>
+    )}
 
                     </ul>
                     
