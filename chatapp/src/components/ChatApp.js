@@ -119,7 +119,7 @@ const ChatApp = () => {
     }
   };
 
- 
+ console.log(onlineUsers);
   
 
   return (
@@ -143,31 +143,34 @@ const ChatApp = () => {
                   />
                 </div>
                 <ul className="list-unstyled chat-list mt-2 mb-0">
-                  {friends.map((user, index) => (
-                    user !== currentUser && (
-                      <li
-                        key={index}
-                        className="clearfix"
-                        onClick={() => {
-                          // Set the selected user to chat with
-                          setSelectedUser(user.userId);
-                        }}
-                      >
-                        <img
-                          src="https://bootdey.com/img/Content/avatar/avatar1.png"
-                          alt="avatar"
-                        />
+                {friends.map((user, index) => {
+  const isOnline = onlineUsers.includes(user.userId);
+  return (
+    user !== currentUser && (
+      <li
+        key={index}
+        className="clearfix"
+        onClick={() => {
+          // Set the selected user to chat with
+          setSelectedUser(user.userId);
+        }}
+      >
+        <img
+  src={user.profilePicture || "https://bootdey.com/img/Content/avatar/avatar1.png"}
+  alt="avatar"
+/>
+        <div className="about">
+          <div className="name">{user.username}</div>
+          <div className="status">
+            <i className={`fa fa-circle ${isOnline ? 'online' : 'offline'}`}></i>
+            {isOnline ? 'online' : 'offline'}
+          </div>
+        </div>
+      </li>
+    )
+  );
+})}
 
-                        <div className="about">
-                          <div className="name">{user.username}</div>
-                          
-                          <div className="status">
-                            <i className="fa fa-circle online"></i> online
-                          </div>
-                        </div>
-                      </li>
-                    )
-                  ))}
                 </ul>
               </div>
 

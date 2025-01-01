@@ -10,6 +10,10 @@ input[type="search"] {
     color: #ECF0F5;
     background: #1A2226;
 }
+.offline {
+    color: red;
+    margin-right: 5px;
+  }
 .my-button{
     border-color: #0DB8DE;
     /* border-radius: 0px; */
