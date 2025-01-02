@@ -10,10 +10,19 @@ input[type="search"] {
     color: #ECF0F5;
     background: #1A2226;
 }
+
 .offline {
-    color: red;
+    color: #ff0000;
     margin-right: 5px;
   }
+  /* .clearfix:after {
+    visibility: hidden;
+    display: block;
+    font-size: 0;
+    content: " ";
+    clear: both;
+    height: 0
+} */
 .my-button{
     border-color: #0DB8DE;
     /* border-radius: 0px; */
@@ -92,7 +101,7 @@ input[type="search"] {
 }
 
 .people-list .chat-list img {
-    width: 0px;
+    width: 40px;
     border-radius: 70%;
 }
 
@@ -289,3 +298,124 @@ input[type="search"] {
         overflow-x: auto;
     }
 }
+
+
+@media only screen and (max-width: 767px) {
+    /* People list */
+    .chat-app .people-list {
+        width: 100%;
+        padding: 10px;
+        position: relative;
+        background: #1A2226;
+        left: 0;
+        display: block;
+        height: auto;
+        margin-bottom: 15px;
+    }
+
+    /* Chat section */
+    .chat-app .chat {
+        margin: 0;
+    }
+
+    .chat-app .chat-header {
+        padding: 10px 15px;
+        border-radius: 0.55rem 0.55rem 0 0;
+    }
+
+    .chat-app .chat-history {
+        height: 200px;
+        overflow-y: auto;
+    }
+
+    .chat-app .chat-message {
+        position: relative;
+    }
+
+    .chat-app .chat-message .input-group {
+        width: 100%;
+    }
+
+    .chat .chat-header .chat-about {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .chat .chat-history .message {
+        font-size: 14px;
+        padding: 15px;
+    }
+
+    .chat .chat-history .message-time {
+        font-size: 10px;
+    }
+}
+
+@media only screen and (min-width: 768px) and (max-width: 992px) {
+    .chat-app .people-list {
+        width: 80%;
+    }
+
+    .chat-app .chat {
+        margin-left: 20%;
+    }
+
+    .chat .chat-header {
+        padding: 12px 18px;
+    }
+
+    .chat .chat-history {
+        height: 450px;
+        overflow-y: auto;
+    }
+
+    .chat .chat-history .message {
+        font-size: 14px;
+        padding: 15px;
+    }
+
+    .chat .chat-history .message-time {
+        font-size: 12px;
+    }
+}
+
+/* @media only screen and (min-width: 992px) {
+    .chat-app .people-list {
+        width: 280px;
+    }
+
+    .chat-app .chat {
+        margin-left: 280px;
+    }
+
+    .chat .chat-history {
+        height: 500px;
+    }
+} */
+@media only screen and (max-width: 767px) {
+    /* On mobile devices, reduce the button size */
+    .chat-header button {
+        font-size: 12px; /* Smaller font size for button text */
+        padding: 5px 10px; /* Adjust padding to make the button smaller */
+    }
+
+    /* If you want the button icon size smaller as well */
+    .chat-header button i {
+        font-size: 14px; /* Reduce the size of the icons inside the buttons */
+    }
+}
+
+@media only screen and (max-width: 992px) and (min-width: 768px) {
+    /* On tablets, reduce the button size */
+    .chat-header button {
+        font-size: 14px; /* Slightly smaller font size for button text */
+        padding: 6px 12px; /* Adjust padding to make the button smaller */
+    }
+
+    /* If you want the button icon size smaller on tablets */
+    .chat-header button i {
+        font-size: 16px; /* Smaller icon size for tablet */
+    }
+}
+

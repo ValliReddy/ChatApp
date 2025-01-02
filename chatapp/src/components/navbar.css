@@ -7,6 +7,9 @@ body, ul, li, a, span {
   box-sizing: border-box;
   font-family: 'Roboto', sans-serif;
 }
+.cursive {
+  font-family: 'Dancing Script', cursive; /* You can replace with any cursive font */
+}
 
 /* Navbar Container */
 .navbar {
@@ -75,4 +78,48 @@ body, ul, li, a, span {
 
 .dropdown:hover .dropdown-content {
   display: block;
+}
+/* Responsive Design */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 10px 15px; /* Adjust navbar padding */
+  }
+
+  .navbar-header .navbar-brand {
+    font-size: 22px;
+  }
+
+  .navbar-nav ul {
+    gap: 10px; /* Reduced gap between items */
+  }
+
+  .navbar-nav ul li a,
+  .navbar-nav ul li .dropbtn {
+    padding: 8px 10px; /* Reduced padding for smaller screens */
+    font-size: 16px; /* Smaller font size */
+  }
+ 
+  
+  /* Ensure dropdown still works on small screens */
+  .dropdown-content {
+    position: absolute;
+    background-color: #333;
+    margin: 0;
+  }
+
+  .dropdown:hover .dropdown-content {
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-header .navbar-brand {
+    font-size: 15px;
+  }
+
+  .navbar-nav ul li a,
+  .navbar-nav ul li .dropbtn {
+    padding: 0px 1px; /* Further reduced padding for small screens */
+    font-size: 14px; /* Further reduced font size */
+  }
 }

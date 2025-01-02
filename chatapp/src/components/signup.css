@@ -125,3 +125,77 @@ label {
 .loginbttm {
     padding: 0px;
 }
+/* Responsive Design */
+@media (max-width: 768px) {
+    /* Adjust login box padding */
+    .login-box {
+        margin-top: 50px;
+        padding: 15px;
+    }
+
+    /* Adjust font size for login key and title */
+    .login-key {
+        font-size: 60px;
+        height: 80px;
+        line-height: 80px;
+    }
+
+    .login-title {
+        font-size: 24px;
+    }
+
+    /* Adjust form input width */
+    input[type=text], input[type=password] {
+        font-size: 16px;
+        padding-left: 10px;
+    }
+
+    /* Adjust button size */
+    .btn-outline-primary {
+        font-size: 16px;
+        padding: 10px 20px;
+    }
+
+    /* Adjust form-group margins */
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .login-button {
+        text-align: center;
+    }
+
+    /* Adjust footer text alignment */
+    .login-text {
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Adjust font size for smaller screens */
+    .login-key {
+        font-size: 50px;
+        height: 60px;
+        line-height: 60px;
+    }
+
+    .login-title {
+        font-size: 20px;
+    }
+
+    /* Adjust form input sizes */
+    input[type=text], input[type=password] {
+        font-size: 14px;
+    }
+
+    /* Further reduce button size */
+    .btn-outline-primary {
+        font-size: 14px;
+        padding: 8px 16px;
+    }
+
+    /* Adjust margins for smaller screens */
+    .form-group {
+        margin-bottom: 20px;
+    }
+}
