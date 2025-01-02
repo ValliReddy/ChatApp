@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { db, auth } from './firebaseConfig'; // Import your Firebase setup
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-
+import Notification from './notification';
 const ProfilePage = () => {
   const [username, setUsername] = useState('');
   const[curr,setCurrent]=useState('');
@@ -12,7 +12,8 @@ const ProfilePage = () => {
   const [registered, setRegistered] = useState([]);  // To store all registered users
 
   const [searchText, setSearchText] = useState('');  // For searching users by name
-
+  const [notificationKey, setNotificationKey] = useState(0);
+  const [error, setError] = useState('');
 
   // Fetch all users once on component mount
   const fetchUsers = async () => {
@@ -42,6 +43,7 @@ const ProfilePage = () => {
       //   console.log(`User ID: ${user.userId}`);
       // });
     } catch (error) {
+      
       console.error('Error fetching users:', error);
     }
   };
@@ -122,7 +124,9 @@ const fetchUserFriends = async (userEmail) => {
         // Validate friend ID and ensure it doesn't already exist
         if (!friend.id || userData.friends.includes(friend.id)) {
           console.log(friend.id);
-          alert('Invalid friend data or already added.');
+          // alert('Invalid friend data or already added.');
+          setError('Invalid friend data or already added.');
+        setNotificationKey(prevKey => prevKey + 1);
         
           return;
         }
@@ -176,7 +180,9 @@ const fetchUserFriends = async (userEmail) => {
         });
        
         console.log('Profile updated successfully!');
-        alert('Profile updated!');
+        // alert('Profile updated!');
+        setError('Profile updated!');
+        setNotificationKey(prevKey => prevKey + 1);
       } catch (error) {
         console.error('Error updating profile:', error);
         alert('Failed to update profile. Please try again.');
@@ -309,6 +315,12 @@ const fetchUserFriends = async (userEmail) => {
     ) : (
       <li>No friends yet</li>
     )}
+    {error && (
+          <Notification
+            key={notificationKey}
+            message={error}
+          />
+        )}
 
                     </ul>
                     

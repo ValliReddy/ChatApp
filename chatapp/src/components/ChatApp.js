@@ -4,6 +4,7 @@ import 'font-awesome/css/font-awesome.min.css';
 import './chatApp.css'; // Add custom CSS for styling
 import io from 'socket.io-client';
 import { useUserContext } from './UserProvider'; // Import the custom hook
+
 const ChatApp = () => {
   const [messages, setMessages] = useState({}); // Store messages by receiver
   const [newMessage, setNewMessage] = useState('');
@@ -15,6 +16,9 @@ const ChatApp = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const socket = useRef(null);
   const { user, friends } = useUserContext();
+ 
+
+  
  console.log(friends);
 
   useEffect(() => {
