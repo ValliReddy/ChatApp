@@ -12,7 +12,7 @@ const ChatApp = () => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null); // Track selected chat user
   const [typingUser, setTypingUser] = useState(null); // Track who is typing
-  
+  const [searchTerm, setSearchTerm] = useState('');
   const socket = useRef(null);
   const { user, friends } = useUserContext();
  console.log(friends);
@@ -135,47 +135,57 @@ const ChatApp = () => {
                   {/* People List - Contacts Section */}
                   {isContactsVisible && !selectedUser && (
                       <div id="plist" className="people-list">
-                          <div className="input-group">
-                              <div className="input-group-prepend">
-                                  <span className="input-group-text">
-                                      <i className="fa fa-search"></i>
-                                  </span>
-                              </div>
-                              <input
-                                  type="text"
-                                  className="form-control"
-                                  placeholder="Search..."
-                              />
-                          </div>
-                          <ul className="list-unstyled chat-list mt-2 mb-0">
-                              {friends.map((user, index) => {
-                                  const isOnline = onlineUsers.includes(user.userId);
-                                  return (
-                                      user !== currentUser && (
-                                          <li
-                                              key={index}
-                                              className="clearfix"
-                                              onClick={() => {
-                                                  setSelectedUser(user.userId);
-                                                  setIsContactsVisible(false); // Hide contact list on click
-                                              }}
-                                          >
-                                              <img
-                                                  src={user.profilePic || "https://bootdey.com/img/Content/avatar/avatar4.png"}
-                                                  alt="avatar"
-                                              />
-                                              <div className="about">
-                                                  <div className="name">{user.username}</div>
-                                                  <div className="status">
-                                                      <i className={`fa fa-circle ${isOnline ? 'online' : 'offline'}`}></i>
-                                                      {isOnline ? 'online' : 'offline'}
-                                                  </div>
-                                              </div>
-                                          </li>
-                                      )
-                                  );
-                              })}
-                          </ul>
+                        {/* Search Input */}
+<div className="input-group">
+  <div className="input-group-prepend">
+    <span className="input-group-text">
+      <i className="fa fa-search"></i>
+    </span>
+  </div>
+  <input
+    type="text"
+    className="form-control"
+    placeholder="Search..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)} // Update search term
+  />
+</div>
+
+{/* Filtered Contact List */}
+<ul className="list-unstyled chat-list mt-2 mb-0">
+  {friends
+    .filter((user) => 
+      user.username.toLowerCase().includes(searchTerm.toLowerCase()) // Filter by search term
+    )
+    .map((user, index) => {
+      const isOnline = onlineUsers.includes(user.userId);
+      return (
+        user !== currentUser && (
+          <li
+            key={index}
+            className="clearfix"
+            onClick={() => {
+              setSelectedUser(user.userId);
+              setIsContactsVisible(false); // Hide contact list on click
+            }}
+          >
+            <img
+              src={user.profilePic || "https://bootdey.com/img/Content/avatar/avatar4.png"}
+              alt="avatar"
+            />
+            <div className="about">
+              <div className="name">{user.username}</div>
+              <div className="status">
+                <i className={`fa fa-circle ${isOnline ? 'online' : 'offline'}`}></i>
+                {isOnline ? 'online' : 'offline'}
+              </div>
+            </div>
+          </li>
+        )
+      );
+    })}
+</ul>
+
                       </div>
                   )}
 
