@@ -73,6 +73,7 @@ const express = require('express');
 const cors = require('cors');
 const socketIo = require('socket.io');
 const http = require('http');
+const { group } = require('console');
 
 // Initialize express app
 const app = express();
@@ -117,10 +118,13 @@ io.on('connection', (socket) => {
     // console.log(users[data.receiver]);
     const receiverSocket = users[data.receiver];
     if (receiverSocket) {
+      
       receiverSocket.emit('receive_message', {
         sender: data.sender,
         text: data.text,
         time:data.time,
+        group:data.group,
+       
         
       });
       console.log(`Message sent to ${data.receiver}`);

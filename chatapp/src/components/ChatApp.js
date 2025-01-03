@@ -6,7 +6,9 @@ import io from 'socket.io-client';
 import { useUserContext } from './UserProvider'; // Import the custom hook
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from './firebaseConfig'; // Import your Firebase setup
+
 const ChatApp = () => {
+  const [registered, setRegistered] = useState([]);  // To store all registered users
   const [messages, setMessages] = useState({}); // Store messages by receiver
   const [newMessage, setNewMessage] = useState('');
   const [username, setUsername] = useState('');
@@ -17,58 +19,85 @@ const ChatApp = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const[selectedGroup,setSelectedGroup]=useState('');
   const socket = useRef(null);
-  const { user, friends } = useUserContext();
+  const { user, friends,group_names } = useUserContext();
   const [groups, setGroups] = useState([]); // New state to manage groups
   const [isCreatingGroup, setIsCreatingGroup] = useState(false); // Track group creation dropdown visibility
   const [newGroupName, setNewGroupName] = useState(''); // Group name
   const [selectedFriends, setSelectedFriends] = useState([]); 
 
   
- console.log(friends);
+ console.log("group names",group_names);
 
-  useEffect(() => {
-    if (user) {
-      setCurrentUser(user.email);
-    }
-  }, [user]);
-  console.log(friends)
-  useEffect(() => {
-    if (currentUser) {
-      socket.current = io('http://localhost:5000');
+ useEffect(() => {
+  if (user) {
+    setCurrentUser(user.email);
+  }
+}, [user]);
+console.log(friends)
+useEffect(() => {
+  if (currentUser) {
+    socket.current = io('http://localhost:5000');
 
-      socket.current.on('connect', () => {
-        console.log('Socket connected');
+    socket.current.on('connect', () => {
+      console.log('Socket connected');
+    });
+
+    // socket.current.on('receive_message', (msg) => {
+    //   console.log('Received message:', msg);
+    //   setMessages((prevMessages) => {
+    //     const newMessages = { ...prevMessages };
+
+    //     if (!newMessages[msg.sender]) {
+    //       newMessages[msg.sender] = [];
+    //     }
+
+    //     // Prevent duplicating messages
+    //     const messageExists = newMessages[msg.sender].some(
+    //       (existingMsg) => existingMsg.time === msg.time && existingMsg.text === msg.text
+    //     );
+
+    //     if (!messageExists) {
+    //       newMessages[msg.sender].push(msg);
+    //     }
+    //     console.log(newMessages)
+
+    //     return newMessages;
+    //   });
+    // });
+    socket.current.on('receive_message', (msg) => {
+      console.log('Received message:', msg);
+      setMessages((prevMessages) => {
+        const newMessages = { ...prevMessages };
+    
+        // If the message has a group key, set the sender to the group key
+        const sender = msg.group ? msg.group : msg.sender;
+    
+        // Initialize the array if it doesn't exist for the sender (or group)
+        if (!newMessages[sender]) {
+          newMessages[sender] = [];
+        }
+    
+        // Prevent duplicating messages
+        const messageExists = newMessages[sender].some(
+          (existingMsg) => existingMsg.time === msg.time && existingMsg.text === msg.text
+        );
+    
+        if (!messageExists) {
+          newMessages[sender].push(msg);
+        }
+        console.log(newMessages);
+    
+        return newMessages;
       });
+    });
+    
 
-      socket.current.on('receive_message', (msg) => {
-        console.log('Received message:', msg);
-        setMessages((prevMessages) => {
-          const newMessages = { ...prevMessages };
-
-          if (!newMessages[msg.sender]) {
-            newMessages[msg.sender] = [];
-          }
-
-          // Prevent duplicating messages
-          const messageExists = newMessages[msg.sender].some(
-            (existingMsg) => existingMsg.time === msg.time && existingMsg.text === msg.text
-          );
-
-          if (!messageExists) {
-            newMessages[msg.sender].push(msg);
-          }
-          console.log(newMessages)
-
-          return newMessages;
-        });
-      });
-
-      socket.current.on('update_users', (users) => {
-        console.log('Updated user list:', users);
-        
-        setOnlineUsers(users);
-      });
+    socket.current.on('update_users', (users) => {
+      console.log('Updated user list:', users);
       
+      setOnlineUsers(users);
+    });
+    
 
       socket.current.on('typing', (user) => {
         if (user !== currentUser) {
@@ -84,7 +113,6 @@ const ChatApp = () => {
     }
   }, [currentUser]);
   
-
   // const handleUsernameSubmit = () => {
   //   if (username.trim()) {
   //     setCurrentUser(username);
@@ -92,36 +120,129 @@ const ChatApp = () => {
   //     alert('Please enter a valid username');
   //   }
   // };
+  const fetchUsers = async () => {
+    try {
+      const current = auth.currentUser;
+      console.log(current);
+      const usersRef = collection(db, 'users');
+     
+      const querySnapshot = await getDocs(usersRef);
+      const newRegistered = [];
   
+      querySnapshot.forEach((doc) => {
+        const userData = doc.data();
+        const userId = doc.id;  // Get the unique document ID
+  
+        if (userData.username && !newRegistered.some(user => user.username === userData.username) &&
+        current.email !== userId) {
+          newRegistered.push({ ...userData, userId });  // Add the userId to the user data
+        }
+      });
+  
+      setRegistered(newRegistered);
+      
+      // Example of how to log unique ID and email for each registered user
+      console.log(newRegistered)
+      newRegistered.forEach(user => {
+        console.log(`User ID: ${user.userId}`);
+      });
+    } catch (error) {
+      
+      console.error('Error fetching users:', error);
+    }
+  };
+  useEffect(() => {
+   fetchUsers();
+  }, []);  
+  
+
+  // const handleSendMessage = () => {
+  //   if (newMessage.trim() && selectedUser) {
+  //     const message = {
+  //       sender: currentUser,
+  //       receiver: selectedUser,
+  //       text: newMessage,
+  //       time: new Date().toLocaleTimeString(),
+  //     };
+  //     console.log('Sending message:', message);
+  //     socket.current.emit('send_message', message);
+  //     socket.current.emit('stop_typing', currentUser); // Stop typing indicator when the message is sent
+
+  //     setMessages((prevMessages) => {
+  //       const newMessages = { ...prevMessages };
+  //       if (!newMessages[selectedUser]) {
+  //         newMessages[selectedUser] = [];
+  //       }
+  //       // Add new message if it doesn't already exist
+  //       const messageExists = newMessages[selectedUser].some(
+  //         (existingMsg) => existingMsg.time === message.time && existingMsg.text === message.text
+  //       );
+  //       if (!messageExists) {
+  //         newMessages[selectedUser].push(message);
+  //       }
+  //       return newMessages;
+  //     });
+  //     setNewMessage('');
+  //   }
+  // };
   const handleSendMessage = () => {
-    if (newMessage.trim() && selectedUser) {
+    if (newMessage.trim() && (selectedUser || selectedGroup)) {
       const message = {
         sender: currentUser,
-        receiver: selectedUser,
         text: newMessage,
         time: new Date().toLocaleTimeString(),
       };
-      console.log('Sending message:', message);
-      socket.current.emit('send_message', message);
-      socket.current.emit('stop_typing', currentUser); // Stop typing indicator when the message is sent
+ 
+      // If selectedUser exists, send the message to that user
+      if (selectedUser) {
 
+        message.receiver = selectedUser;
+
+        console.log('Sending message to user:', message);
+        socket.current.emit('send_message', message);
+      }
+  
+      // If selectedGroup exists, send the message to all group members
+      if (selectedGroup) {
+        // // Get all registered users that belong to the selected group
+        // const groupMembers = registered.filter(user =>
+        //   user.groups.includes(selectedGroup) // Assuming the user has a `groups` field with group names
+        // );
+  
+        registered.forEach(member => {
+          message.group=selectedGroup;
+          message.receiver = member.userId;  // Assuming the email is the receiver for group members
+          console.log('Sending message to group member:', message);
+          socket.current.emit('send_message', message);
+        });
+      }
+  
+      socket.current.emit('stop_typing', currentUser); // Stop typing indicator when the message is sent
+  
+      // Update messages state
       setMessages((prevMessages) => {
         const newMessages = { ...prevMessages };
-        if (!newMessages[selectedUser]) {
-          newMessages[selectedUser] = [];
-        }
-        // Add new message if it doesn't already exist
-        const messageExists = newMessages[selectedUser].some(
+  
+        // Add new message to selected user or group
+        const messageExists = newMessages[selectedUser || selectedGroup]?.some(
           (existingMsg) => existingMsg.time === message.time && existingMsg.text === message.text
         );
         if (!messageExists) {
-          newMessages[selectedUser].push(message);
+          newMessages[selectedUser || selectedGroup] = newMessages[selectedUser || selectedGroup] || [];
+          newMessages[selectedUser || selectedGroup].push(message);
         }
+  
         return newMessages;
       });
+  
       setNewMessage('');
     }
   };
+  
+
+  
+
+  
 
   const handleTyping = () => {
     if (newMessage.trim()) {
@@ -431,7 +552,7 @@ const ChatApp = () => {
                           {/* Chat History */}
                           <div className="chat-history">
                               <ul className="list-unstyled">
-                                  {(messages[selectedUser] || []).map((msg, index) => (
+                                  {(messages[selectedUser] || messages[selectedGroup] || []).map((msg, index) => (
                                       <li key={index} className="clearfix">
                                           <div className="message-data">
                                               <span className="message-data-name"></span>
