@@ -10,7 +10,21 @@ input[type="search"] {
     color: #ECF0F5;
     background: #1A2226;
 }
-
+.dropdown-menu{
+   background: #19495f;
+   label{
+    color: #ECF0F5;
+   }
+}
+.rounded-circle {
+    width: 40px;  /* Set width */
+    height: 40px; /* Set height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0; /* Remove any padding for perfect centering */
+  }
+  
 .offline {
     color: #ff0000;
     margin-right: 5px;
