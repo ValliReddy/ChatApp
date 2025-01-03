@@ -15,7 +15,7 @@ const ChatApp = () => {
   const [selectedUser, setSelectedUser] = useState(null); // Track selected chat user
   const [typingUser, setTypingUser] = useState(null); // Track who is typing
   const [searchTerm, setSearchTerm] = useState('');
-  
+  const[selectedGroup,setSelectedGroup]=useState('');
   const socket = useRef(null);
   const { user, friends } = useUserContext();
   const [groups, setGroups] = useState([]); // New state to manage groups
@@ -83,6 +83,7 @@ const ChatApp = () => {
       };
     }
   }, [currentUser]);
+  
 
   // const handleUsernameSubmit = () => {
   //   if (username.trim()) {
@@ -154,17 +155,43 @@ const ChatApp = () => {
         const userRef = doc(db, 'users', user.email);
   
         try {
-          // Fetch current groups and add the new one
-          const currentGroups = [...groups, newGroup];
+          // Fetch current groups and add the new one for the current user
+          const userSnapshot = await getDoc(userRef);
+          const userData = userSnapshot.data();
+          const currentGroups = userData.groups || [];
   
-          // Update user document in Firestore with the new groups array
+          // Add the new group to the user's groups list
+          const updatedUserGroups = [...currentGroups, newGroup];
+  
+          // Update user document with the new groups array
           await updateDoc(userRef, {
-            groups: currentGroups,
+            groups: updatedUserGroups,
           });
   
-          console.log('Groups updated successfully!');
-          // setError('Profile updated!');
-          // setNotificationKey((prevKey) => prevKey + 1);
+          console.log('Groups updated for current user successfully!');
+  
+          // Now, update the groups for each member in the new group
+          for (const memberEmail of selectedFriends) {
+            if (memberEmail !== user.email) {
+              const memberRef = doc(db, 'users', memberEmail);
+  
+              // Fetch the current groups for each member
+              const memberSnapshot = await getDoc(memberRef);
+              const memberData = memberSnapshot.data();
+              const memberGroups = memberData.groups || [];
+  
+              // Add the new group to their groups list
+              const updatedMemberGroups = [...memberGroups, newGroup];
+  
+              // Update the member's document with the new groups
+              await updateDoc(memberRef, {
+                groups: updatedMemberGroups,
+              });
+  
+              console.log(`Groups updated for member ${memberEmail}`);
+            }
+          }
+  
         } catch (error) {
           console.error('Error updating groups:', error);
           alert('Failed to update groups. Please try again.');
@@ -216,7 +243,7 @@ const ChatApp = () => {
   <div className="row clearfix">
     <div className="col-lg-12">
       <div className="card chat-app">
-        {isContactsVisible && !selectedUser && (
+        {isContactsVisible && (!selectedUser ||!selectedGroup)&& (
           <div id="plist" className="people-list">
             {/* "+" Button */}
             <div className="d-flex justify-content-between align-items-center mb-2">
@@ -256,7 +283,7 @@ const ChatApp = () => {
                         }}
                       />
                       <label className="form-check-label" htmlFor={`friend-${index}`}>
-                        {friend.username}
+                        {friend.username} 
                       </label>
                     </li>
                   ))}
@@ -336,6 +363,10 @@ const ChatApp = () => {
   ) : ( */}
    { groups.map((group, index) => (
       <li key={index} className="clearfix"
+      onClick={() => {
+        setSelectedGroup(group.name);
+        setIsContactsVisible(false);
+      }}
       >
         <img
           src={
@@ -357,7 +388,7 @@ const ChatApp = () => {
         )}
 
                   {/* Chat Section - Only visible when a user is selected */}
-                  {selectedUser && (
+                  {(selectedUser || selectedGroup)  && (
                       <div className="chat">
                           {/* Back button to show contacts */}
                           <div className="chat-header clearfix">
@@ -367,6 +398,7 @@ const ChatApp = () => {
                                           className="btn btn-link "
                                           onClick={() => {
                                               setSelectedUser(null); // Close the chat
+                                              setSelectedGroup(null);
                                               setIsContactsVisible(true); // Show contacts again
                                           }}
                                       >
@@ -378,7 +410,7 @@ const ChatApp = () => {
                                               alt="avatar"
                                           />
                                           <div className="chat-about ml-2">
-                                              <h6 className="mb-0">{selectedUser}</h6>
+                                              <h6 className="mb-0">{selectedUser || selectedGroup} </h6>
                                               <small>Last seen: 2 hours ago</small>
                                           </div>
                                       </a>
