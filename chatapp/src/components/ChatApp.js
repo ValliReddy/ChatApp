@@ -8,6 +8,7 @@ import { collection, getDocs, doc, getDoc, setDoc, updateDoc } from 'firebase/fi
 import { db, auth } from './firebaseConfig'; // Import your Firebase setup
 
 const ChatApp = () => {
+  const [lastSeen, setLastSeen] = useState(null);
   const [isGroupMembersVisible, setIsGroupMembersVisible] = useState(false); // New state variable
   const [registered, setRegistered] = useState([]);  // To store all registered users
   const [messages, setMessages] = useState({}); // Store messages by receiver
@@ -99,6 +100,7 @@ useEffect(() => {
     socket.current.on('connect', () => {
       console.log('Socket connected');
     });
+    socket.current.emit('online_status', { user: currentUser, status: 'online' });
 
     socket.current.on('receive_message', (msg) => {
       console.log('Received message:', msg);
@@ -165,6 +167,7 @@ useEffect(() => {
       socket.current.emit('register_user', currentUser);
 
       return () => {
+        socket.current.emit('online_status', { user: currentUser, status: 'offline' });
         socket.current.disconnect();
       };
       
@@ -429,7 +432,13 @@ const markAsRead = (message) => {
     });
   }
 };
-
+useEffect(() => {
+  if (selectedUser) {
+    socket.current.emit('get_last_seen', selectedUser, (lastSeenTimestamp) => {
+      setLastSeen(lastSeenTimestamp ? new Date(lastSeenTimestamp).toLocaleString() : 'Online');
+    });
+  }
+}, [selectedUser]);
 
 
  return (
@@ -616,7 +625,9 @@ const markAsRead = (message) => {
               >
                 {selectedUser || selectedGroup}
               </h6>
-              <small>Last seen: 2 hours ago</small>
+             
+              {selectedUser && (onlineUsers.includes(selectedUser) ? 'Online' : `Last seen: ${lastSeen || 'Loading...'}`)}
+              {/* <small>Last seen: {lastSeen || 'Loading...'}</small> */}
             </div>
           </a>
         </div>

@@ -93,11 +93,18 @@ app.use(cors());
 
 // Store users in an object to track active connections
 const users = {};
-
+const userLastSeen = {};
 // Handling socket.io connections
 io.on('connection', (socket) => {
   console.log('A user connected');
 
+
+  socket.on('online_status', ({ user, status }) => {
+    if (status === 'offline') {
+      userLastSeen[user] = new Date(); // Store the last seen time
+    }
+    console.log(`User ${user} is ${status}`);
+  });
   // Register the user with a username  //on means listening to emit for both client and server
   socket.on('register_user', (username) => {
     users[username] = socket;
@@ -177,15 +184,19 @@ io.on('connection', (socket) => {
     }
   });
   
+  socket.on('get_last_seen', (user, callback) => {
+    const lastSeen = userLastSeen[user];
+    callback(lastSeen || null); // Return the last seen time or null if not found
+  });
   
 
   // Handle user disconnect
   socket.on('disconnect', () => {
-    // Find and remove user from the users list
+    // Find the user that disconnected and update their last seen time
     for (const username in users) {
       if (users[username] === socket) {
+        userLastSeen[username] = new Date();
         delete users[username];
-        console.log(`${username} disconnected`);
         break;
       }
     }
