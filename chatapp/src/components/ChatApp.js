@@ -8,6 +8,7 @@ import { collection, getDocs, doc, getDoc, setDoc, updateDoc } from 'firebase/fi
 import { db, auth } from './firebaseConfig'; // Import your Firebase setup
 
 const ChatApp = () => {
+  const [isGroupMembersVisible, setIsGroupMembersVisible] = useState(false); // New state variable
   const [registered, setRegistered] = useState([]);  // To store all registered users
   const [messages, setMessages] = useState({}); // Store messages by receiver
   const [newMessage, setNewMessage] = useState('');
@@ -513,41 +514,72 @@ useEffect(() => {
                       <div className="chat">
                           {/* Back button to show contacts */}
                           <div className="chat-header clearfix">
-                              <div className="row">
-                                  <div className="col-lg-6 d-flex align-items-center">
-                                      <button
-                                          className="btn btn-link "
-                                          onClick={() => {
-                                              setSelectedUser(null); // Close the chat
-                                              setSelectedGroup(null);
-                                              setIsContactsVisible(true); // Show contacts again
-                                          }}
-                                      >
-                                          <i className="fa fa-chevron-left"></i> {/* Back arrow */}
-                                      </button>
-                                      <a href="#view_info" data-toggle="modal" className="d-flex align-items-center">
-                                          <img
-                                              src="https://bootdey.com/img/Content/avatar/avatar2.png"
-                                              alt="avatar"
-                                          />
-                                          <div className="chat-about ml-2">
-                                              <h6 className="mb-0">{selectedUser || selectedGroup} </h6>
-                                              <small>Last seen: 2 hours ago</small>
-                                          </div>
-                                      </a>
-                                  </div>
-                                  <div className="col-lg-6 d-flex justify-content-end">
-                                      {["camera", "image", "cogs", "question"].map((icon, idx) => (
-                                          <button
-                                              key={idx}
-                                              className={`btn btn-outline-${icon === "question" ? "warning" : "primary"}`}
-                                          >
-                                              <i className={`fa fa-${icon}`}></i>
-                                          </button>
-                                      ))}
-                                  </div>
-                              </div>
-                          </div>
+      <div className="row">
+        <div className="col-lg-6 d-flex align-items-center">
+          <button
+            className="btn btn-link"
+            onClick={() => {
+              setSelectedUser(null); // Close the chat
+              setSelectedGroup(null);
+              setIsContactsVisible(true); // Show contacts again
+            }}
+          >
+            <i className="fa fa-chevron-left"></i> {/* Back arrow */}
+          </button>
+          <a href="#view_info" data-toggle="modal" className="d-flex align-items-center">
+            <img
+              src="https://bootdey.com/img/Content/avatar/avatar2.png"
+              alt="avatar"
+            />
+            <div className="chat-about ml-2">
+              <h6
+                className="mb-0"
+                onClick={() => {
+                  if (selectedGroup) {
+                    setIsGroupMembersVisible((prev) => !prev); // Toggle visibility
+                  }
+                }}
+                style={{ cursor: selectedGroup ? "pointer" : "default" }}
+              >
+                {selectedUser || selectedGroup}
+              </h6>
+              <small>Last seen: 2 hours ago</small>
+            </div>
+          </a>
+        </div>
+        <div className="col-lg-6 d-flex justify-content-end">
+          {["camera", "image", "cogs", "question"].map((icon, idx) => (
+            <button
+              key={idx}
+              className={`btn btn-outline-${icon === "question" ? "warning" : "primary"}`}
+            >
+              <i className={`fa fa-${icon}`}></i>
+            </button>
+          ))}
+        </div>
+        {selectedGroup && isGroupMembersVisible && (
+  <div className="group-members-dropdown">
+    <ul className="members-list">
+      {/* Display the total number of members before mapping through the members */}
+      <p>{groups.find((group) => group.name === selectedGroup)?.members.length} members</p>
+      {/* Map through the members */}
+      {groups
+        .find((group) => group.name === selectedGroup)
+        ?.members.map((member, idx) => (
+          <li key={idx}>
+            <h6 className="member-item">{member}</h6>
+          </li>
+        ))}
+    </ul>
+  </div>
+)}
+
+
+      </div>
+    </div>
+
+
+    
 
                           {/* Chat History */}
                           <div className="chat-history">

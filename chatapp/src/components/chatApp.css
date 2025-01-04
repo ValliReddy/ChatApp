@@ -16,6 +16,25 @@ input[type="search"] {
     color: #ECF0F5;
    }
 }
+.group-members-dropdown {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #19495f;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  .members-list {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .member-item {
+    font-size: 14px;
+    margin: 5px 0;
+    color: #ddd;
+  }
+  
 .rounded-circle {
     width: 40px;  /* Set width */
     height: 40px; /* Set height */
