@@ -158,15 +158,26 @@ useEffect(() => {
     });
     
 
-      socket.current.on('typing', (user) => {
-        if (user !== currentUser) {
-          setTypingUser(user);
-        }
-      });
+    socket.current.on('typing', (user) => {
+      if (user !== currentUser) {
+        setTypingUser(user);
+      }
+    });
+
+    // Listen for stop typing event
+    socket.current.on('stop_typing', (user) => {
+      if (user !== currentUser) {
+        setTypingUser(null); // Clear typing user when stop typing event is received
+      }
+    });
+
 
       socket.current.emit('register_user', currentUser);
 
       return () => {
+        socket.current.off('typing');
+        socket.current.off('stop_typing');
+        setTypingUser(null);
         socket.current.emit('online_status', { user: currentUser, status: 'offline' });
         socket.current.disconnect();
       };
@@ -248,6 +259,14 @@ useEffect(() => {
   //     setNewMessage('');
   //   }
   // };
+
+  const handleTyping = () => {
+    if (newMessage.trim()) {
+      socket.current.emit('typing', currentUser); // Emit typing event
+    } else {
+      socket.current.emit('stop_typing', currentUser); // Emit stop typing event if the message is empty
+    }
+  };
   const handleSendMessage = () => {
     if (newMessage.trim() && (selectedUser || selectedGroup)) {
       const message = {
@@ -281,7 +300,7 @@ useEffect(() => {
         });
       }
   
-      socket.current.emit('stop_typing', currentUser); // Stop typing indicator when the message is sent
+      // socket.current.emit('stop_typing', currentUser); // Stop typing indicator when the message is sent
   
       // Update messages state
       setMessages((prevMessages) => {
@@ -298,7 +317,7 @@ useEffect(() => {
   
         return newMessages;
       });
-  
+      socket.current.emit('stop_typing', currentUser); 
       setNewMessage('');
     }
   };
@@ -308,13 +327,13 @@ useEffect(() => {
 
   
 
-  const handleTyping = () => {
-    if (newMessage.trim()) {
-      socket.current.emit('typing', currentUser); // Emit typing event
-    } else {
-      socket.current.emit('stop_typing', currentUser); // Emit stop typing event if the message is empty
-    }
-  };
+  // const handleTyping = () => {
+  //   if (newMessage.trim()) {
+  //     socket.current.emit('typing', currentUser); // Emit typing event
+  //   } else {
+  //     socket.current.emit('stop_typing', currentUser); // Emit stop typing event if the message is empty
+  //   }
+  // };
   const handleGroupCreation = async () => {
     const user = auth.currentUser;
   
@@ -435,7 +454,7 @@ const markAsRead = (message) => {
 useEffect(() => {
   if (selectedUser) {
     socket.current.emit('get_last_seen', selectedUser, (lastSeenTimestamp) => {
-      setLastSeen(lastSeenTimestamp ? new Date(lastSeenTimestamp).toLocaleString() : 'Online');
+      setLastSeen(lastSeenTimestamp ? new Date(lastSeenTimestamp).toLocaleString() : '');
     });
   }
 }, [selectedUser]);
@@ -626,7 +645,8 @@ useEffect(() => {
                 {selectedUser || selectedGroup}
               </h6>
              
-              {selectedUser && (onlineUsers.includes(selectedUser) ? 'Online' : `Last seen: ${lastSeen || 'Loading...'}`)}
+              {selectedUser && (onlineUsers.includes(selectedUser) ? 'Online' : `Last seen: ${lastSeen || 'Loading...'}`)}<br />
+              {typingUser && typingUser !== currentUser && <small> Typing...</small>}
               {/* <small>Last seen: {lastSeen || 'Loading...'}</small> */}
             </div>
           </a>
@@ -687,7 +707,9 @@ useEffect(() => {
         onClick={() => markAsRead(msg)}
       >
         {msg.text}
+        
         <div className="message-time">{msg.time}</div>
+       
         {msg.sender === currentUser && (
           <div className="message-status">
             {msg.status === 'single-tick' && <span className="single-tick"></span>}
@@ -702,17 +724,14 @@ useEffect(() => {
   ))}
 </ul>
 
-  {typingUser && typingUser !== currentUser && (
-    <div className="typing-indicator">
-      <span>{typingUser} is typing...</span>
-    </div>
-  )}
+
 </div>
 
 
                           {/* Chat Message Input */}
                           <div className="chat-message clearfix">
                               <div className="input-group mb-0">
+
                                   <div className="input-group-prepend">
                                       <span className="input-group-text">
                                           <i className="fa fa-send"></i>
@@ -725,6 +744,11 @@ useEffect(() => {
                                       onChange={(e) => {
                                           setNewMessage(e.target.value);
                                           handleTyping();
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleSendMessage();
+                                        }
                                       }}
                                       placeholder="Enter text here..."
                                   />

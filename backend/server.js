@@ -188,7 +188,18 @@ io.on('connection', (socket) => {
     const lastSeen = userLastSeen[user];
     callback(lastSeen || null); // Return the last seen time or null if not found
   });
-  
+  socket.on('typing', (user) => {
+    console.log(`${user} is typing...`);
+    // Broadcast the typing event to all clients except the sender
+    socket.broadcast.emit('typing', user);
+  });
+
+  // Handle stop typing event
+  socket.on('stop_typing', (user) => {
+    console.log(`${user} stopped typing`);
+    // Broadcast the stop typing event to all clients except the sender
+    socket.broadcast.emit('stop_typing', user);
+  });
 
   // Handle user disconnect
   socket.on('disconnect', () => {
