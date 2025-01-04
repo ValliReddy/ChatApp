@@ -109,29 +109,75 @@ io.on('connection', (socket) => {
   });
 
   // Handle incoming messages from users
+  // socket.on('send_message', (data) => {
+  //   console.log('Message received from', data.sender);
+  //   console.log('Message:', data.text);
+
+  //   // Send the message to the intended receiver
+  //   // console.log(users);
+  //   // console.log(users[data.receiver]);
+  //   const receiverSocket = users[data.receiver];
+  //   if (receiverSocket) {
+      
+  //     receiverSocket.emit('receive_message', {
+  //       sender: data.sender,
+  //       text: data.text,
+  //       time:data.time,
+  //       group:data.group,
+  //       status: 'blue-double-tick',
+  //       // receiver:data.receiver,
+       
+        
+  //     });
+  //     console.log(`Message sent to ${data.receiver}`);
+  //   } else {
+  //     console.log(`Receiver ${data.receiver} not found`);
+  //   }
+  // });
   socket.on('send_message', (data) => {
     console.log('Message received from', data.sender);
     console.log('Message:', data.text);
-
-    // Send the message to the intended receiver
-    // console.log(users);
-    // console.log(users[data.receiver]);
+  
     const receiverSocket = users[data.receiver];
     if (receiverSocket) {
-      
+      // Send the message to the receiver
       receiverSocket.emit('receive_message', {
         sender: data.sender,
         text: data.text,
-        time:data.time,
-        group:data.group,
-       
-        
+        time: data.time,
+        group: data.group,
+        status: 'single-tick', // Initial status when sent
       });
+  
+      // Notify sender of delivery
+      socket.emit('update_status', {
+        receiver: data.receiver,
+        time: data.time,
+        status: 'double-tick',
+      });
+  
       console.log(`Message sent to ${data.receiver}`);
     } else {
       console.log(`Receiver ${data.receiver} not found`);
     }
   });
+  
+  // Handle message read receipt
+  socket.on('message_read', (data) => {
+    console.log('Message read event received:', data);
+  
+    const senderSocket = users[data.sender];
+    if (senderSocket) {
+      senderSocket.emit('update_status', {
+        receiver: data.receiver,
+        time: data.time,
+        status: 'blue-double-tick',
+      });
+      console.log(`Blue tick update sent to ${data.sender}`);
+    }
+  });
+  
+  
 
   // Handle user disconnect
   socket.on('disconnect', () => {

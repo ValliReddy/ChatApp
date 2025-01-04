@@ -16,6 +16,7 @@ input[type="search"] {
     color: #ECF0F5;
    }
 }
+
 .group-members-dropdown {
     margin-top: 10px;
     padding: 10px;
@@ -34,6 +35,21 @@ input[type="search"] {
     margin: 5px 0;
     color: #ddd;
   }
+  .message-sender {
+    font-size: 12px;
+    color: #777; /* grey color */
+    display: flex;
+    align-items: center;
+  }
+  
+  .sender-symbol {
+    margin-right: 5px;
+    color: #777; /* grey color */
+  }
+  
+  .sender-name {
+    color: #777; /* grey color */
+  }
   
 .rounded-circle {
     width: 40px;  /* Set width */
@@ -48,6 +64,24 @@ input[type="search"] {
     color: #ff0000;
     margin-right: 5px;
   }
+  /* Single Tick */
+.single-tick::after {
+    content: '✔';
+    color: gray; /* Single tick in gray */
+  }
+  
+  /* Double Tick */
+  .double-tick::after {
+    content: '✔✔';
+    color: gray; /* Double tick in gray */
+  }
+  
+  /* Blue Double Tick */
+  .blue-double-tick::after {
+    content: '✔✔';
+    color: blue; /* Double tick in blue */
+  }
+  
   /* .clearfix:after {
     visibility: hidden;
     display: block;

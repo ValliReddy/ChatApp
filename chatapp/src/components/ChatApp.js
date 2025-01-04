@@ -32,9 +32,66 @@ const ChatApp = () => {
  useEffect(() => {
   if (user) {
     setCurrentUser(user.email);
-  }
-}, [user]);
-console.log(friends)
+  }})
+
+// useEffect(() => {
+//   if (currentUser) {
+//     socket.current = io('http://localhost:5000');
+
+//     socket.current.on('connect', () => {
+//       console.log('Socket connected');
+//     });
+   
+
+//     // socket.current.on('receive_message', (msg) => {
+//     //   console.log('Received message:', msg);
+//     //   setMessages((prevMessages) => {
+//     //     const newMessages = { ...prevMessages };
+
+//     //     if (!newMessages[msg.sender]) {
+//     //       newMessages[msg.sender] = [];
+//     //     }
+
+//     //     // Prevent duplicating messages
+//     //     const messageExists = newMessages[msg.sender].some(
+//     //       (existingMsg) => existingMsg.time === msg.time && existingMsg.text === msg.text
+//     //     );
+
+//     //     if (!messageExists) {
+//     //       newMessages[msg.sender].push(msg);
+//     //     }
+//     //     console.log(newMessages)
+
+//     //     return newMessages;
+//     //   });
+//     // });
+//     socket.current.on('receive_message', (msg) => {
+//       console.log('Received message:', msg);
+//       setMessages((prevMessages) => {
+//         const newMessages = { ...prevMessages };
+    
+//         // If the message has a group key, set the sender to the group key
+//         const sender = msg.group ? msg.group : msg.sender;
+    
+//         // Initialize the array if it doesn't exist for the sender (or group)
+//         if (!newMessages[sender]) {
+//           newMessages[sender] = [];
+//         }
+    
+//         // Prevent duplicating messages
+//         const messageExists = newMessages[sender].some(
+//           (existingMsg) => existingMsg.time === msg.time && existingMsg.text === msg.text
+//         );
+    
+//         if (!messageExists) {
+//           newMessages[sender].push(msg);
+//         }
+        
+//         console.log(newMessages);
+    
+//         return newMessages;
+//       });
+//     });
 useEffect(() => {
   if (currentUser) {
     socket.current = io('http://localhost:5000');
@@ -43,55 +100,54 @@ useEffect(() => {
       console.log('Socket connected');
     });
 
-    // socket.current.on('receive_message', (msg) => {
-    //   console.log('Received message:', msg);
-    //   setMessages((prevMessages) => {
-    //     const newMessages = { ...prevMessages };
-
-    //     if (!newMessages[msg.sender]) {
-    //       newMessages[msg.sender] = [];
-    //     }
-
-    //     // Prevent duplicating messages
-    //     const messageExists = newMessages[msg.sender].some(
-    //       (existingMsg) => existingMsg.time === msg.time && existingMsg.text === msg.text
-    //     );
-
-    //     if (!messageExists) {
-    //       newMessages[msg.sender].push(msg);
-    //     }
-    //     console.log(newMessages)
-
-    //     return newMessages;
-    //   });
-    // });
     socket.current.on('receive_message', (msg) => {
       console.log('Received message:', msg);
       setMessages((prevMessages) => {
         const newMessages = { ...prevMessages };
-    
-        // If the message has a group key, set the sender to the group key
         const sender = msg.group ? msg.group : msg.sender;
-    
-        // Initialize the array if it doesn't exist for the sender (or group)
+
         if (!newMessages[sender]) {
           newMessages[sender] = [];
         }
-    
-        // Prevent duplicating messages
+
         const messageExists = newMessages[sender].some(
           (existingMsg) => existingMsg.time === msg.time && existingMsg.text === msg.text
         );
-    
+
         if (!messageExists) {
           newMessages[sender].push(msg);
         }
-        console.log(newMessages);
+
+        return newMessages;
+      });
+    });
+
+    socket.current.on('update_status', (data) => {
+      console.log('Update status received:', data);
+    
+      setMessages((prevMessages) => {
+        const newMessages = { ...prevMessages };
+        const receiver = data.receiver;
+    
+        if (newMessages[receiver]) {
+          newMessages[receiver] = newMessages[receiver].map((msg) =>
+            msg.time === data.time ? { ...msg, status: data.status } : msg
+          );
+        }
     
         return newMessages;
       });
     });
     
+
+//     socket.current.emit('register_user', currentUser);
+
+//     return () => {
+//       socket.current.disconnect();
+//     };
+//   }
+// }, [currentUser]);
+
 
     socket.current.on('update_users', (users) => {
       console.log('Updated user list:', users);
@@ -111,8 +167,11 @@ useEffect(() => {
       return () => {
         socket.current.disconnect();
       };
+      
     }
+   
   }, [currentUser]);
+  
   
   // const handleUsernameSubmit = () => {
   //   if (username.trim()) {
@@ -192,6 +251,7 @@ useEffect(() => {
         sender: currentUser,
         text: newMessage,
         time: new Date().toLocaleTimeString(),
+        status: 'single-tick',
       };
  
       // If selectedUser exists, send the message to that user
@@ -358,6 +418,18 @@ useEffect(() => {
 //   console.log('Updated Groups:', groups); // Log groups after state is updated
 // }, [groups]);
 
+const markAsRead = (message) => {
+  console.log('Mark as read:', message);
+
+  if (message.status !== 'blue-double-tick') {
+    socket.current.emit('message_read', {
+      sender: selectedUser,
+      receiver: currentUser ,
+      time: message.time,
+    });
+  }
+};
+
 
 
  return (
@@ -469,6 +541,7 @@ useEffect(() => {
               <i
                 className={`fa fa-circle ${isOnline ? 'online' : 'offline'}`}
               ></i>
+              
               {isOnline ? 'online' : 'offline'}
             </div>
           </div>
@@ -499,7 +572,7 @@ useEffect(() => {
         />
         <div className="about">
           <div className="name">{group.name}</div>
-          <div className="status">{group.members.length} members</div>
+          <div className="status">{group.members.length+1} members</div>
         </div>
       </li>
     ))
@@ -559,19 +632,26 @@ useEffect(() => {
         </div>
         {selectedGroup && isGroupMembersVisible && (
   <div className="group-members-dropdown">
-    <ul className="members-list">
-      {/* Display the total number of members before mapping through the members */}
-      <p>{groups.find((group) => group.name === selectedGroup)?.members.length} members</p>
-      {/* Map through the members */}
-      {groups
-        .find((group) => group.name === selectedGroup)
-        ?.members.map((member, idx) => (
-          <li key={idx}>
-            <h6 className="member-item">{member}</h6>
-          </li>
-        ))}
-    </ul>
-  </div>
+  <ul className="members-list">
+    {/* Display the total number of members only once */}
+    <p><strong>{(groups.find((group) => group.name === selectedGroup)?.members.length || 0) + 1} members</strong></p>
+
+    {/* Hardcoded "You" for the current user */}
+    <li>
+      <h6 className="member-item">You</h6>
+    </li>
+
+    {/* Map through the remaining members */}
+    {groups
+      .find((group) => group.name === selectedGroup)
+      ?.members.map((member, idx) => (
+        <li key={idx}>
+          <h6 className="member-item">{member}</h6>
+        </li>
+      ))}
+  </ul>
+</div>
+
 )}
 
 
@@ -583,31 +663,41 @@ useEffect(() => {
 
                           {/* Chat History */}
                           <div className="chat-history">
-                              <ul className="list-unstyled">
-                                  {(messages[selectedUser] || messages[selectedGroup] || []).map((msg, index) => (
-                                      <li key={index} className="clearfix">
-                                          <div className="message-data">
-                                              <span className="message-data-name"></span>
-                                          </div>
-                                          <div
-                                              className={`message ${
-                                                  msg.sender === currentUser
-                                                      ? 'my-message'
-                                                      : 'other-message'
-                                              } float-${msg.sender === currentUser ? 'right' : 'left'}`}
-                                          >
-                                              {msg.text}
-                                              <div className="message-time">{msg.time}</div>
-                                          </div>
-                                      </li>
-                                  ))}
-                              </ul>
-                              {typingUser && typingUser !== currentUser && (
-                                  <div className="typing-indicator">
-                                      <span>{typingUser} is typing...</span>
-                                  </div>
-                              )}
-                          </div>
+                          <ul className="list-unstyled">
+  {(messages[selectedUser] || messages[selectedGroup] || []).map((msg, index) => (
+    <li key={index} className="clearfix">
+      <div className="message-data">
+        <span className="message-data-name"></span>
+      </div>
+      <div
+        className={`message ${
+          msg.sender === currentUser ? 'my-message' : 'other-message'
+        } float-${msg.sender === currentUser ? 'right' : 'left'}`}
+        onClick={() => markAsRead(msg)}
+      >
+        {msg.text}
+        <div className="message-time">{msg.time}</div>
+        {msg.sender === currentUser && (
+          <div className="message-status">
+            {msg.status === 'single-tick' && <span className="single-tick"></span>}
+            {msg.status === 'double-tick' && <span className="double-tick"></span>}
+            {msg.status === 'blue-double-tick' && (
+              <span className="blue-double-tick"></span>
+            )}
+          </div>
+        )}
+      </div>
+    </li>
+  ))}
+</ul>
+
+  {typingUser && typingUser !== currentUser && (
+    <div className="typing-indicator">
+      <span>{typingUser} is typing...</span>
+    </div>
+  )}
+</div>
+
 
                           {/* Chat Message Input */}
                           <div className="chat-message clearfix">
